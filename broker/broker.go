@@ -125,6 +125,7 @@ func NewSubscriber(subscriptionID string, configMap ...map[string]string) (Subsc
 		parallelism:    parallelism,
 		subscriptionID: subscriptionID,
 		logger:         logger,
+		errorChan:      make(chan *SubscriberError, ErrorChannelBufferSize),
 	}, nil
 }
 

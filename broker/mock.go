@@ -117,6 +117,9 @@ type MockSubscriber struct {
 	eventQueue chan *mockEvent
 	cancelFunc context.CancelFunc
 	wg         sync.WaitGroup
+
+	// Error channel for error notifications
+	errorChan chan *SubscriberError
 }
 
 type mockEvent struct {
@@ -129,6 +132,7 @@ func NewMockSubscriber() *MockSubscriber {
 	return &MockSubscriber{
 		Handlers:   make(map[string][]HandlerFunc),
 		eventQueue: make(chan *mockEvent, 100),
+		errorChan:  make(chan *SubscriberError, 100),
 	}
 }
 
@@ -153,6 +157,16 @@ func (m *MockSubscriber) Subscribe(ctx context.Context, topic string, handler Ha
 	return nil
 }
 
+// Errors implements Subscriber.Errors
+func (m *MockSubscriber) Errors() <-chan *SubscriberError {
+	return m.errorChan
+}
+
+// SimulateError allows tests to inject errors into the error channel
+func (m *MockSubscriber) SimulateError(err *SubscriberError) {
+	m.errorChan <- err
+}
+
 // Close implements Subscriber.Close
 func (m *MockSubscriber) Close() error {
 	m.mu.Lock()
@@ -163,6 +177,7 @@ func (m *MockSubscriber) Close() error {
 		m.cancelFunc()
 	}
 	close(m.eventQueue)
+	close(m.errorChan)
 	m.wg.Wait()
 	return m.CloseError
 }
@@ -218,9 +233,9 @@ func (m *MockSubscriber) Reset() {
 	m.CloseError = nil
 	m.Closed = false
 	m.SubscribeFunc = nil
+	m.errorChan = make(chan *SubscriberError, 100)
 }
 
 // Ensure mock implementations satisfy the interfaces
 var _ Publisher = (*MockPublisher)(nil)
 var _ Subscriber = (*MockSubscriber)(nil)
-
