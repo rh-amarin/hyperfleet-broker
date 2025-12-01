@@ -1,4 +1,4 @@
-module github.com/openshift-hyperfleet/hyperfleet-broker
+module github.com/rh-amarin/hyperfleet-broker
 
 go 1.25.0
 
